@@ -5,8 +5,8 @@ public class DataloadConstants {
 	public static final String COMMA = ",";
 	public static final String FILE_HEADER = "firstName,LastName";
 	
-	public static final String DATAFIELD_FIRSTNAME = "firstName";
-	public static final String DATAFIELD_LASTNAME = "LastName";
+	public static final String DATAFIELD_FIRSTNAME = "FName";
+	public static final String DATAFIELD_LASTNAME = "LName";
 	
 	public static final String DATATYPE_STRING = "string";
 	
