@@ -5,10 +5,10 @@ public class DataloadConstants {
 	public static final String COMMA = ",";
 	public static final String FILE_HEADER = "firstName,LastName";
 	
-	public static final String DATAFIELD_FIRSTNAME = "Attr1";
-	public static final String DATAFIELD_LASTNAME = "Attr2";
+	public static final String DATAFIELD_FIRSTNAME = "firstName";
+	public static final String DATAFIELD_LASTNAME = "lastName";
 	
-	public static final String DATATYPE_STRING = "string";
+	public static final String DATATYPE_STRING = "String";
 	
 	public static final String SQS_MSG_BODY = "Sample String";
 	
