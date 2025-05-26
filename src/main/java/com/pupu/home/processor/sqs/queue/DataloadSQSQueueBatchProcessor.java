@@ -1,4 +1,4 @@
-package com.pupu.home.sqs.queue.submitter;
+package com.pupu.home.processor.sqs.queue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,40 +8,35 @@ import java.util.UUID;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
-import com.pupu.home.s3.event.dto.Member;
-import com.pupu.home.s3.event.utils.DataloadConstants;
+import com.pupu.home.aws.client.factory.AWSClientFactory;
+import com.pupu.home.dto.Member;
+import com.pupu.home.processor.LambdaProcessor;
+import com.pupu.home.utils.AWSClientType;
+import com.pupu.home.utils.DataloadConstants;
 
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
-public class DataloadSQSQueueBatchSubmitter {
+public class DataloadSQSQueueBatchProcessor implements LambdaProcessor {
 	
-	public DataloadSQSQueueBatchSubmitter() {}
-	
-	public DataloadSQSQueueBatchSubmitter(List<Member> memberList, LambdaLogger logger) {
-		this.memberList = memberList;
-		this.logger = logger;
-	}
-	
-	public void processMemberRecordsInChunk() {
-		getLogger().log("DataloadSQSQueueBatchSubmitter.processMemberRecordsInChunk:: START", LogLevel.INFO);
+	public void processMemberRecordsInChunk(List<Member> memberList, LambdaLogger logger) {
+		logger.log("DataloadSQSQueueBatchSubmitter.processMemberRecordsInChunk:: START", LogLevel.INFO);
 		
-		if(getMemberList() != null && getMemberList().size() > 0) {
+		if(memberList != null && memberList.size() > 0) {
 			
 			int chuckSize = 10;
-			int dataSize = getMemberList().size();
+			int dataSize = memberList.size();
 			
 			int chuckCounter = 1;
 			
 			for(int i=0; i<dataSize; i+= chuckSize) {
 				int end = Math.min(i + chuckSize, dataSize);
 				
-				List<Member> chunk = getMemberList().subList(i, end);
+				List<Member> chunk = memberList.subList(i, end);
 				
-				submitSQSEventInBatch(chunk, chuckCounter);
+				submitSQSEventInBatch(chunk, chuckCounter, logger);
 				
 				chuckCounter ++;
 			}
@@ -49,8 +44,8 @@ public class DataloadSQSQueueBatchSubmitter {
 		
 	}
 	
-	private void submitSQSEventInBatch(List<Member> chunk, int chuckCounter) {
-		getLogger().log("DataloadSQSQueueBatchSubmitter.submitSQSEventInBatch:: START", LogLevel.INFO);
+	private void submitSQSEventInBatch(List<Member> chunk, int chuckCounter, LambdaLogger logger) {
+		logger.log("DataloadSQSQueueBatchSubmitter.submitSQSEventInBatch:: START", LogLevel.INFO);
 		
 		if(chunk != null && chunk.size() > 0) {
 			List<SendMessageBatchRequestEntry> sqsBatchEntries = new ArrayList<>();
@@ -69,19 +64,19 @@ public class DataloadSQSQueueBatchSubmitter {
 				sqsBatchEntries.add(batchRequestEntry);
 			}
 			
-			sendMessageToSQSBatch(sqsBatchEntries, chuckCounter);
+			sendMessageToSQSBatch(sqsBatchEntries, chuckCounter, logger);
 		}
 	}
 	
-	private void sendMessageToSQSBatch(List<SendMessageBatchRequestEntry> sqsBatchEntries, int chuckCounter) {
+	private void sendMessageToSQSBatch(List<SendMessageBatchRequestEntry> sqsBatchEntries, int chuckCounter, LambdaLogger logger) {
 		if(sqsBatchEntries != null && sqsBatchEntries.size() > 0) {
 			SendMessageBatchRequest batchRequest = SendMessageBatchRequest.builder()
 					.queueUrl(System.getenv(DataloadConstants.SQS_QUEUE_URL))
 					.entries(sqsBatchEntries)
 					.build();
 			
-			getSqsClient().sendMessageBatch(batchRequest);
-			getLogger().log("DataloadSQSQueueBatchSubmitter.sendMessageToSQSBatch:: submitted SQS BATCH for chuck=" + chuckCounter, LogLevel.INFO);
+			getSQSClient().sendMessageBatch(batchRequest);
+			logger.log("DataloadSQSQueueBatchSubmitter.sendMessageToSQSBatch:: submitted SQS BATCH for chuck=" + chuckCounter, LogLevel.INFO);
 		}
 	}
 	
@@ -103,24 +98,9 @@ public class DataloadSQSQueueBatchSubmitter {
 		return messageAttributeValue;
 	}
 	
-	//SQS Client
-	private SqsClient sqsClient = SqsClient.builder()
-			.region(Region.of(System.getenv(DataloadConstants.DATALOAD_AWS_REGION)))
-			.build();
-	
-	private List<Member> memberList;
-	private LambdaLogger logger;
-	
-	public SqsClient getSqsClient() {
+	private SqsClient getSQSClient() {
+		SqsClient sqsClient = (SqsClient)AWSClientFactory.getInstance().getClient(AWSClientType.SQSCLIENT.name());
 		return sqsClient;
 	}
-
-	public List<Member> getMemberList() {
-		return memberList;
-	}
-
-	public LambdaLogger getLogger() {
-		return logger;
-	}
-
+	
 }

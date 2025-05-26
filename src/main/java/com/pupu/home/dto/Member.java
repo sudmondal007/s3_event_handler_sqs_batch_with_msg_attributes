@@ -1,4 +1,4 @@
-package com.pupu.home.s3.event.dto;
+package com.pupu.home.dto;
 
 public class Member {
 	private String firstName;

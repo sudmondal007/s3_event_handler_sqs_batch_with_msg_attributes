@@ -1,4 +1,4 @@
-package com.pupu.home.s3.event.utils;
+package com.pupu.home.utils;
 
 public class DataloadConstants {
 	
