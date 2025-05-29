@@ -10,16 +10,22 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.pupu.home.aws.client.factory.AWSClientFactory;
 import com.pupu.home.dto.Member;
-import com.pupu.home.processor.LambdaProcessor;
-import com.pupu.home.utils.AWSClientType;
 import com.pupu.home.utils.DataloadConstants;
 
-import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
-public class DataloadSQSQueueBatchProcessor implements LambdaProcessor {
+public class DataloadSQSQueueBatchProcessor {
+	
+	private static DataloadSQSQueueBatchProcessor instance;
+	private DataloadSQSQueueBatchProcessor() {}
+	public static DataloadSQSQueueBatchProcessor getInstance() {
+		if (instance == null) {
+			instance = new DataloadSQSQueueBatchProcessor();
+		}
+		return instance;
+	}
 	
 	public void processMemberRecordsInChunk(List<Member> memberList, LambdaLogger logger) {
 		logger.log("DataloadSQSQueueBatchSubmitter.processMemberRecordsInChunk:: START", LogLevel.INFO);
@@ -75,7 +81,7 @@ public class DataloadSQSQueueBatchProcessor implements LambdaProcessor {
 					.entries(sqsBatchEntries)
 					.build();
 			
-			getSQSClient().sendMessageBatch(batchRequest);
+			AWSClientFactory.getInstance().getSqsClient().sendMessageBatch(batchRequest);
 			logger.log("DataloadSQSQueueBatchSubmitter.sendMessageToSQSBatch:: submitted SQS BATCH for chuck=" + chuckCounter, LogLevel.INFO);
 		}
 	}
@@ -96,11 +102,6 @@ public class DataloadSQSQueueBatchProcessor implements LambdaProcessor {
 				.build();
 		
 		return messageAttributeValue;
-	}
-	
-	private SqsClient getSQSClient() {
-		SqsClient sqsClient = (SqsClient)AWSClientFactory.getInstance().getClient(AWSClientType.SQSCLIENT.name());
-		return sqsClient;
 	}
 	
 }

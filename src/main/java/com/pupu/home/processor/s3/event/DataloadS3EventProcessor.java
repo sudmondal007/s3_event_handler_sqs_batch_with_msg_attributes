@@ -10,21 +10,23 @@ import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.pupu.home.aws.client.factory.AWSClientFactory;
 import com.pupu.home.dto.Member;
-import com.pupu.home.processor.LambdaProcessor;
-import com.pupu.home.processor.factory.LambdaProcessorFactory;
 import com.pupu.home.processor.sqs.queue.DataloadSQSQueueBatchProcessor;
-import com.pupu.home.utils.AWSClientType;
 import com.pupu.home.utils.DataloadConstants;
-import com.pupu.home.utils.LambdaProcssorType;
 
 import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.sqs.SqsClient;
 
-public class DataloadS3EventProcessor implements LambdaProcessor {
+public class DataloadS3EventProcessor {
+	
+	private static DataloadS3EventProcessor instance;
+	private DataloadS3EventProcessor() {}
+	public static DataloadS3EventProcessor getInstance() {
+		if (instance == null) {
+			instance = new DataloadS3EventProcessor();
+		}
+		return instance;
+	}
 	
 	public void processDataloadS3Event(S3Event s3Event, LambdaLogger logger) {
 		logger.log("DataloadS3EventHandler.processDataloadS3Event:: START", LogLevel.INFO);
@@ -40,8 +42,7 @@ public class DataloadS3EventProcessor implements LambdaProcessor {
 		List<Member> memberList = processS3File(objectBytes, logger);
 		
 		// process member records and send SQS Message
-		DataloadSQSQueueBatchProcessor batchSubmitter = (DataloadSQSQueueBatchProcessor)LambdaProcessorFactory.getInstance().getProcessor(LambdaProcssorType.SQSBATCH.name());
-		batchSubmitter.processMemberRecordsInChunk(memberList, logger);
+		DataloadSQSQueueBatchProcessor.getInstance().processMemberRecordsInChunk(memberList, logger);
 	}
 	
 	/**
@@ -56,7 +57,7 @@ public class DataloadS3EventProcessor implements LambdaProcessor {
 		
 		try {
 			GetObjectRequest objectRequest = GetObjectRequest.builder().key(key).bucket(bucket).build();
-			objectBytes = getS3Client().getObjectAsBytes(objectRequest);
+			objectBytes = AWSClientFactory.getInstance().getS3Client().getObjectAsBytes(objectRequest);
 		} catch (Exception ex) {
 			logger.log("DataloadS3EventHandler.processAndGetS3FileObject:: error" + ex.getMessage(), LogLevel.ERROR);
 		}
@@ -91,11 +92,6 @@ public class DataloadS3EventProcessor implements LambdaProcessor {
 			}
 		}
 		return memberList;
-	}
-
-	private S3Client getS3Client() {
-		S3Client s3Client = (S3Client)AWSClientFactory.getInstance().getClient(AWSClientType.S3CLIENT.name());
-		return s3Client;
 	}
 
 }
