@@ -42,7 +42,7 @@ public class DataloadSQSQueueBatchProcessor {
 				
 				List<Member> chunk = memberList.subList(i, end);
 				
-				submitSQSEventInBatch(chunk, chuckCounter, logger);
+				//submitSQSEventInBatch(chunk, chuckCounter, logger);
 				
 				chuckCounter ++;
 			}
@@ -81,7 +81,7 @@ public class DataloadSQSQueueBatchProcessor {
 					.entries(sqsBatchEntries)
 					.build();
 			
-			AWSClientFactory.getInstance().getSqsClient().sendMessageBatch(batchRequest);
+			//AWSClientFactory.getInstance().getSqsClient().sendMessageBatch(batchRequest);
 			logger.log("DataloadSQSQueueBatchSubmitter.sendMessageToSQSBatch:: submitted SQS BATCH for chuck=" + chuckCounter, LogLevel.INFO);
 		}
 	}
